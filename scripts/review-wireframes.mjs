@@ -1,0 +1,45 @@
+import { chromium } from 'playwright'
+import fs from 'node:fs/promises'
+const output = '.local-backups/wireframe-2026-10-26-review'
+await fs.mkdir(output, { recursive: true })
+const browser = await chromium.launch({ headless: true })
+const errors = []
+const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })
+page.on('pageerror', e => errors.push(e.message))
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) })
+await page.emulateMedia({ reducedMotion: 'reduce' })
+await page.goto('http://localhost:5173', { waitUntil: 'domcontentloaded' })
+await page.locator('.loader').waitFor({ state: 'detached', timeout: 60000 })
+await page.waitForTimeout(1600)
+const bounds = await page.locator('.scene-anchor').evaluateAll(nodes => nodes.map(n => ({ id: n.id, top: n.offsetTop, height: n.offsetHeight })))
+for (const section of bounds) {
+  await page.setViewportSize({ width: 1600, height: section.id === 'home' || section.id === 'contact' ? 900 : 1000 })
+  await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), section.top)
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `${output}/desktop-${section.id}.png` })
+}
+await page.evaluate(() => window.scrollTo({ top: 1860, behavior: 'instant' }))
+await page.waitForTimeout(300)
+await page.screenshot({ path: `${output}/desktop-boundary.png` })
+await page.emulateMedia({ reducedMotion: 'no-preference' })
+await page.evaluate(() => window.scrollTo({ top: 2100, behavior: 'instant' }))
+await page.waitForTimeout(300)
+await page.mouse.move(490, 260)
+await page.waitForTimeout(600)
+await page.screenshot({ path: `${output}/desktop-hover.png` })
+await page.mouse.move(800, 470)
+await page.waitForTimeout(350)
+const cursorAfterHover = await page.evaluate(() => document.body.style.cursor)
+await page.setViewportSize({ width: 390, height: 844 })
+await page.emulateMedia({ reducedMotion: 'reduce' })
+await page.waitForTimeout(600)
+const mobileBounds = await page.locator('.scene-anchor').evaluateAll(nodes => nodes.map(n => ({ id: n.id, top: n.offsetTop, height: n.offsetHeight })))
+for (const section of mobileBounds) {
+  await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), section.top)
+  await page.waitForTimeout(350)
+  await page.screenshot({ path: `${output}/mobile-${section.id}.png` })
+}
+const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+await fs.writeFile(`${output}/checks.json`, JSON.stringify({ errors, bounds, mobileBounds, cursorAfterHover, mobileOverflow }, null, 2))
+console.log(JSON.stringify({ errors, bounds, mobileBounds, cursorAfterHover, mobileOverflow }, null, 2))
+await browser.close()
