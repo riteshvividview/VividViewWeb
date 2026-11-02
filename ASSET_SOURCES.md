@@ -19,3 +19,11 @@ The wireframe names Kipling's, Soul Spaces, Dravida, Ishtaa, Print Design, and W
 The typefaces are [Inter](https://github.com/google/fonts/tree/main/ofl/inter), [Newsreader](https://github.com/google/fonts/tree/main/ofl/newsreader), and [Noto Sans Symbols](https://github.com/google/fonts/tree/main/ofl/notosanssymbols); license notices are stored beside the fonts in `public/fonts/`.
 
 The earlier Nuxt hero remains in `legacy-nuxt/` as a reference for rollback. The live application runs on Vite, React, React Three Fiber, Drei, and Three.js.
+
+## Royal typewriter — 2026-10-29
+
+[Typewriter](https://sketchfab.com/3d-models/typewriter-f8339a2f7ea849b8afbebb76a40e1759) by Francesco Coldesina (`topfrank2013`), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Imported through Blender MCP from Sketchfab and exported to `public/models/royal-typewriter.glb` (3.36 MB). Changes: normalized scale, texture downsampling, brand-color shader materials, interactive key deformation, replacement animated paper. The original author and license are also credited in the homepage's visible asset-credit disclosure.
+
+Bodoni Moda and Manrope are distributed under the SIL Open Font License. Local font files and license notices are in `public/fonts/`.
+
+- `public/models/lady-bust.glb`: "Lady Bust - Benlliure" by Moøkan, https://sketchfab.com/3d-models/a668103a96874b80a8421f22fbb5c74f, CC BY 4.0. Scaled and relit in code.

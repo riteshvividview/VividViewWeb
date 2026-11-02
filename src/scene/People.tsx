@@ -25,6 +25,7 @@ export function InteractivePeople({ frames, team, strips = [], renderStrip, chil
   const reveal=useRef({value:0,pulse:1})
   const active=useRef(-1), timer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined)
   const ripple=useMemo(()=>({uReveal:{value:0},uPulse:{value:1},uTime:{value:0},uColor:{value:new THREE.Color(PAPER)},uAspect:{value:mobile?.8:1.3},uOrigin:{value:new THREE.Vector2(.5,.5)}}),[mobile])
+  const rippleMaterial=useRef<THREE.ShaderMaterial>(null)
 
   useEffect(()=>{
     if(reduced) return
@@ -66,6 +67,8 @@ export function InteractivePeople({ frames, team, strips = [], renderStrip, chil
   useFrame(({clock,size},dt)=>{
     if(scroll.current+size.height<layout.top-350 || scroll.current>layout.top+layout.height+350) return
     const open=reveal.current.value
+    const u=rippleMaterial.current?.uniforms
+    if(u){u.uReveal.value=open;u.uPulse.value=reveal.current.pulse;u.uTime.value=clock.elapsedTime;u.uOrigin.value.copy(ripple.uOrigin.value)}
     groups.current.forEach((group,i)=>{
       if(!group) return
       const card=cards[i],flight=flights[i].value
@@ -110,6 +113,10 @@ export function InteractivePeople({ frames, team, strips = [], renderStrip, chil
     <group position={[0,-100,-10]}>{children}</group>
     {renderStrip && strips.map((s,i)=><group key={i} ref={g=>{stripGroups.current[i]=g}} position={[s.x,-s.y,s.z-10]}>{renderStrip(s)}</group>)}
     {cards.map((c,i)=><group key={i} ref={g=>{groups.current[i]=g}} position={[c.x,-c.y,c.z*2]}><Photo src={team[c.image]} w={c.w} h={c.h} framed interactive={false} focus={[.5,.6]} /></group>)}
+    <mesh position={[center,-600,180]} raycast={()=>{}}><planeGeometry args={[mobile?350:850,650]}/><shaderMaterial ref={rippleMaterial} uniforms={ripple} transparent depthWrite={false} vertexShader="varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader={`varying vec2 vUv;uniform float uReveal,uPulse,uAspect;uniform vec3 uColor;uniform vec2 uOrigin;
+      void main(){vec2 p=(vUv-.5)*vec2(uAspect,1.);float d=length(p);float edge=uReveal*.66-d;float alpha=smoothstep(0.,.06,edge)*uReveal;float ring=exp(-abs(d-uPulse*.65)*80.)*(1.-uPulse)*uReveal;vec3 col=mix(uColor,vec3(.48,.022,.047),ring*.6);gl_FragColor=vec4(col,alpha);
+      #include <colorspace_fragment>
+      }`}/></mesh>
     <group ref={title} position={[center,-600,400]} visible={false}>
       <Label x={0} y={mobile?-173:-200} align="center" size={mobile?7:10} tracking={.18}>DESIGN  —  STRATEGY  —  STORYTELLING</Label>
       <Label x={0} y={mobile?-153:-180} align="center" size={mobile?7:10} tracking={.18}>COLLABORATION  —  IMPACT</Label>
