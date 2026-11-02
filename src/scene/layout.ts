@@ -1,11 +1,6 @@
 import { servicesTravel } from './servicesData'
-export const PAPER = '#F6F5F1'
-export const INK = '#002408'
-export const LIGHT_INK = '#F3F0E6'
-// One page-wide ground: light everywhere, dark while a dark chapter is active.
-export const LIGHT_BG = '#F6F5F1', DARK_BG = '#121512'
-export const DARK_SECTIONS = new Set<string>()
-export const sectionBg = (id: string) => DARK_SECTIONS.has(id) ? DARK_BG : LIGHT_BG
+export const PAPER = '#f5f4f0'
+export const INK = '#252622'
 export const ids = ['home', 'work', 'services', 'people', 'reviews', 'contact'] as const
 export type SectionId = typeof ids[number]
 export type SectionLayout = { id: SectionId; index: number; top: number; height: number; scale: number; width: number; designHeight: number }
@@ -16,12 +11,11 @@ export function makeLayout(width: number, galleryTravel = 0) {
   const mobile = width < 760
   const designWidth = mobile ? 390 : 1600
   const scale = width / designWidth
-  const heights = mobile ? [810, 940 + galleryTravel, 800 + servicesTravel, 1200, 890, 1130] : [1000, 1000 + galleryTravel, 900 + servicesTravel, 1200, 1000, 900]
+  const heights = mobile ? [810, 940 + galleryTravel, 800 + servicesTravel, 1200, 890, 1130] : [900, 1000 + galleryTravel, 900 + servicesTravel, 1200, 1000, 900]
   const gap = (mobile ? 44 : 64) * scale
   // Extra room after the pinned services stage, so the people collage's
   // fly-in (which spills above its own section) starts only once it is reached.
-  // Services gets extra room above so the bust can enter from the gap.
-  const extraBefore: Partial<Record<SectionId, number>> = { services: (mobile ? 160 : 320) * scale, people: (mobile ? 130 : 220) * scale }
+  const extraBefore: Partial<Record<SectionId, number>> = { people: (mobile ? 130 : 220) * scale }
   let top = 0
   const sections: SectionLayout[] = ids.map((id, index) => {
     top += extraBefore[id] ?? 0

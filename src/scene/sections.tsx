@@ -31,7 +31,7 @@ export function Hero() {
     {mobile ? <Label x={195} y={184} size={33} font="hero" align="center">Every creative{ '\n' }outcome.</Label> : <>
       <Label x={800} y={267} size={64} font="hero" align="center">Every creative outcome.</Label>
     </>}
-    <Label x={width / 2} y={mobile ? 282 : 350} size={mobile ? 14 : 20} align="center" color="#002408" width={mobile ? 300 : 540}>We build brands, digital experiences and stories that actually mean something.</Label>
+    <Label x={width / 2} y={mobile ? 282 : 350} size={mobile ? 14 : 20} align="center" color="#63635d" width={mobile ? 300 : 540}>We build brands, digital experiences and stories that actually mean something.</Label>
     <Arrow x={mobile ? 138 : 755} y={mobile ? 376 : 467} r={mobile ? 24 : 33} direction="up" onClick={() => go('#work')} />
     <Label x={mobile ? 176 : 806} y={mobile ? 359 : 444} size={mobile ? 16 : 21} onClick={() => go('#work')}>Explore{ '\n' }Our Work</Label>
     {!mobile && <><Label x={50} y={strapY(layout.scale)} size={11}>BRANDING    /    DIGITAL    /    CONTENT    /    CAMPAIGNS    /    SPACES    /    CONSULTING</Label><Label x={1545} y={strapY(layout.scale)} size={11} align="right">IDEAS    PEOPLE    EXPERIENCES    IMPACT    ——</Label></>}
@@ -112,9 +112,9 @@ function FilmStrip({ x, y, angle, length = 750, z = 0 }: { x: number; y: number;
       const c = new THREE.Color(color)
       for(const [dx, dy] of [[-1,-1],[1,-1],[1,1],[-1,-1],[1,1],[-1,1]]) { positions.push(cx + dx*w/2, cy + dy*h/2, z); colors.push(c.r,c.g,c.b) }
     }
-    rect(0,0,67,length,0,'#B8293D'); rect(0,0,42,length-4,.1,'#FFDE59')
+    rect(0,0,67,length,0,'#a6a59f'); rect(0,0,42,length-4,.1,'#d8d6cf')
     for(let i=0;i<Math.floor(length/23);i++) for(const cx of [-26,26]) rect(cx,-length/2+14+i*23,9,14,.2,PAPER)
-    for(let i=0;i<Math.floor(length/82);i++) rect(0,-length/2+43+i*82,36,69,.2,'#002408')
+    for(let i=0;i<Math.floor(length/82);i++) rect(0,-length/2+43+i*82,36,69,.2,'#b9b7af')
     const g = new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3)); g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3)); return g
   },[length])
   useEffect(() => () => geometry.dispose(),[geometry])
@@ -149,7 +149,7 @@ export function Footer() {
   },[layout.top,reduced])
   return <>
     <DecorativePaths variant="footer" />
-    <Panel x={mobile ? 195 : 800} y={mobile ? 240 : 294} w={mobile ? 354 : 1490} h={mobile ? 406 : 288} radius={mobile ? 28 : 42} color="#B8293D" border />
+    <Panel x={mobile ? 195 : 800} y={mobile ? 240 : 294} w={mobile ? 354 : 1490} h={mobile ? 406 : 288} radius={mobile ? 28 : 42} color="#e8e6e0" border />
     <group ref={fan}>
       <Photo src="/images/branding-4.webp" x={mobile ? 137 : 196} y={mobile ? 128 : 285} w={mobile ? 83 : 152} h={mobile ? 106 : 165} angle={-14} z={5} href={CONTACT} />
       <Photo src="/images/cravery-1.webp" x={mobile ? 194 : 298} y={mobile ? 139 : 300} w={mobile ? 94 : 166} h={mobile ? 119 : 185} angle={-8} z={8} href={CONTACT} />
@@ -159,21 +159,21 @@ export function Footer() {
     <Stroke points={mobile ? [[292, 117], [307, 100]] : [[425, 217], [442, 190]]} color={INK} draw />
     <Stroke points={mobile ? [[301, 133], [316, 129]] : [[438, 235], [459, 222]]} color={INK} draw />
     <Label x={mobile ? 195 : 520} y={mobile ? 234 : 230} size={mobile ? 30 : 57} bold align={mobile ? 'center' : 'left'}>Let’s Discuss{ '\n' }With Our Team</Label>
-    {!mobile && <Stroke points={[[980, 212], [980, 384]]} color="#FFDE59" />}
-    <Label x={mobile ? 48 : 1020} y={mobile ? 333 : 257} size={mobile ? 13 : 20} width={mobile ? 222 : 269} color="#FFDE59">Turning ideas into meaningful experiences. Let’s create something great together.</Label>
-    <Panel x={mobile ? 309 : 1411} y={mobile ? 371 : 294} w={mobile ? 56 : 185} h={mobile ? 56 : 185} radius={mobile ? 14 : 25} color="#B8293D" border z={3} />
+    {!mobile && <Stroke points={[[980, 212], [980, 384]]} color="#a6a49e" />}
+    <Label x={mobile ? 48 : 1020} y={mobile ? 333 : 257} size={mobile ? 13 : 20} width={mobile ? 222 : 269} color="#5f6059">Turning ideas into meaningful experiences. Let’s create something great together.</Label>
+    <Panel x={mobile ? 309 : 1411} y={mobile ? 371 : 294} w={mobile ? 56 : 185} h={mobile ? 56 : 185} radius={mobile ? 14 : 25} color="#e8e6e0" border z={3} />
     <Arrow x={mobile ? 309 : 1411} y={mobile ? 371 : 294} r={mobile ? 36 : 135} direction="up" circle={false} weight={mobile ? 1.5 : 4} onClick={() => go(CONTACT)} />
     <Logo x={mobile ? 26 : 106} y={mobile ? 472 : 518} h={mobile ? 60 : 84} />
     <Label x={mobile ? 26 : 106} y={mobile ? 542 : 613} size={mobile ? 8 : 12} tracking={.35}>IDEAS  ·  EXPERIENCES  ·  IMPACT</Label>
     <SocialIcons mobile={mobile} />
     {footerColumns.map((col, i) => <group key={col.title}>
       <Label x={mobile ? 26 + i * 123 : [750, 988, 1300][i]} y={mobile ? 664 : 519} size={mobile ? 11 : 17} tracking={.12}>{col.title}</Label>
-      {col.links.map(([label, href], n) => <Label key={label} x={mobile ? 26 + i * 123 : [750, 988, 1300][i]} y={(mobile ? 704 : 564) + n * (mobile ? 48 : 43)} size={mobile ? 11 : 20} width={mobile ? 112 : 280} color="#002408" onClick={() => go(href)}>{label}</Label>)}
+      {col.links.map(([label, href], n) => <Label key={label} x={mobile ? 26 + i * 123 : [750, 988, 1300][i]} y={(mobile ? 704 : 564) + n * (mobile ? 48 : 43)} size={mobile ? 11 : 20} width={mobile ? 112 : 280} color="#73746e" onClick={() => go(href)}>{label}</Label>)}
     </group>)}
-    <Stroke points={mobile ? [[22, 988], [368, 988]] : [[55, 794], [1546, 794]]} color="#002408" draw />
-    <Label x={mobile ? 26 : 74} y={mobile ? 1010 : 840} size={mobile ? 10 : 16} color="#002408">© 2026 VIVID VIEW. All rights reserved.</Label>
-    <Label x={mobile ? 26 : 1250} y={mobile ? 1049 : 840} size={mobile ? 11 : 16} color="#002408" onClick={() => go('mailto:contact@thevividview.in?subject=Privacy%20Policy')}>Privacy Policy</Label>
-    <Label x={mobile ? 174 : 1425} y={mobile ? 1049 : 840} size={mobile ? 11 : 16} color="#002408" onClick={() => go('mailto:contact@thevividview.in?subject=Terms%20of%20Use')}>Terms of Use</Label>
+    <Stroke points={mobile ? [[22, 988], [368, 988]] : [[55, 794], [1546, 794]]} color="#93948d" draw />
+    <Label x={mobile ? 26 : 74} y={mobile ? 1010 : 840} size={mobile ? 10 : 16} color="#73746e">© 2026 VIVID VIEW. All rights reserved.</Label>
+    <Label x={mobile ? 26 : 1250} y={mobile ? 1049 : 840} size={mobile ? 11 : 16} color="#73746e" onClick={() => go('mailto:contact@thevividview.in?subject=Privacy%20Policy')}>Privacy Policy</Label>
+    <Label x={mobile ? 174 : 1425} y={mobile ? 1049 : 840} size={mobile ? 11 : 16} color="#73746e" onClick={() => go('mailto:contact@thevividview.in?subject=Terms%20of%20Use')}>Terms of Use</Label>
   </>
 }
 

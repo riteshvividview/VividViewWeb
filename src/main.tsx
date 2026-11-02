@@ -3,25 +3,45 @@ import { createRoot } from 'react-dom/client'
 import { Canvas, events, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Section } from './scene/primitives'
-import { RoyalHero } from './scene/RoyalHero'
 import { Hero, People, Footer } from './scene/sections'
 import { WorkGallery } from './scene/Gallery'
 import { InteractiveTestimonials } from './scene/Testimonials'
 import { Doodles } from './scene/Doodles'
 import { ServicesSection } from './scene/Services'
-import { BrandAtmosphere } from './scene/BrandAtmosphere'
 import { PageReveal } from './scene/Reveal'
 import { services } from './scene/servicesData'
-import { GalleryContext,filterPortfolio,galleryMetrics,railCount,hasMore } from './scene/galleryData'
-import { WorkOverlay } from './WorkOverlay'
-import { makeLayout, PAPER, works, reviews, DARK_SECTIONS, sectionBg } from './scene/layout'
+import { GalleryContext,filterPortfolio,galleryMetrics } from './scene/galleryData'
+import { makeLayout, PAPER, works, reviews } from './scene/layout'
 import { startSmoothScroll, smoothScroll, ScrollTrigger } from './scene/motion'
 import 'lenis/dist/lenis.css'
 import './style.css'
 
 const chapters = ['INTRO', 'OUR WORK', 'SERVICES', 'OUR PEOPLE', 'KIND WORDS', 'CONTACT']
-const components = [RoyalHero, WorkGallery, ServicesSection, People, InteractiveTestimonials, Footer]
+const components = [Hero, WorkGallery, ServicesSection, People, InteractiveTestimonials, Footer]
 type Layout = ReturnType<typeof makeLayout>
+
+function Paper({ scroll, reduced }: { scroll: React.MutableRefObject<number>; reduced: boolean }) {
+  const { size } = useThree()
+  const mesh = useRef<THREE.Mesh>(null)
+  const uniforms = useMemo(() => ({ uColor: { value: new THREE.Color(PAPER) }, uScroll: { value: 0 }, uResolution: { value: new THREE.Vector2(size.width, size.height) } }), [])
+  useFrame(() => {
+    if (mesh.current) mesh.current.position.y = -scroll.current - size.height / 2
+    const current=(mesh.current?.material as THREE.ShaderMaterial|undefined)?.uniforms ?? uniforms
+    current.uScroll.value = scroll.current
+    current.uResolution.value.set(size.width, size.height)
+  })
+  return <mesh ref={mesh} position={[0, 0, -100]} raycast={() => {}}><planeGeometry args={[size.width, size.height]} /><shaderMaterial uniforms={uniforms} depthWrite={false} vertexShader="varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}" fragmentShader={`varying vec2 vUv; uniform vec3 uColor; uniform float uScroll; uniform vec2 uResolution;
+  void main(){
+  vec2 p=vec2(vUv.x,(vUv.y*uResolution.y-uScroll)/max(uResolution.x,760.));
+  float curve=p.x*1.35+p.y*.72+sin(p.y*4.6+p.x*2.5)*.12+sin(p.y*2.1)*.12;
+  float d=abs(fract(curve*5.4)-.5);
+  float contour=1.-smoothstep(.009,.025,d);
+  float soft=1.-smoothstep(.018,.055,d);
+  float grain=fract(sin(dot(gl_FragCoord.xy+vec2(0.,uScroll),vec2(12.9898,78.233)))*43758.5453);
+  gl_FragColor=vec4(uColor-vec3(.047,.046,.043)*contour-vec3(.009)*soft+(grain-.5)*.006,1.);
+  #include <colorspace_fragment>
+  }`} /></mesh>
+}
 
 function Experience({ layout, scroll, reduced, onReady }: { layout: Layout; scroll: React.MutableRefObject<number>; reduced: boolean; onReady: () => void }) {
   const { camera, size, invalidate } = useThree()
@@ -34,7 +54,7 @@ function Experience({ layout, scroll, reduced, onReady }: { layout: Layout; scro
     camera.rotation.set(0, 0, 0)
     camera.updateMatrixWorld()
   }, -2)
-  return <><BrandAtmosphere scroll={scroll} reduced={reduced} sections={layout.sections} />{layout.sections.map((section, i) => {
+  return <><Paper scroll={scroll} reduced={reduced} />{layout.sections.map((section, i) => {
     const Component = components[i]
     return <Section key={section.id} layout={section} scroll={scroll} reduced={reduced}><Component /></Section>
   })}</>
@@ -43,13 +63,11 @@ function Experience({ layout, scroll, reduced, onReady }: { layout: Layout; scro
 function App() {
   const [width, setWidth] = useState(window.innerWidth)
   const [filter,setFilter]=useState('ALL')
-  const [allOpen,setAllOpen]=useState(false)
-  const layout = useMemo(() => makeLayout(width,galleryMetrics(railCount(filterPortfolio(filter).length),width<760,hasMore(filterPortfolio(filter).length)).travel), [width,filter])
+  const layout = useMemo(() => makeLayout(width,galleryMetrics(filterPortfolio(filter).length,width<760).travel), [width,filter])
   const scroll = useRef(window.scrollY)
   const [chapter, setChapter] = useState(0), [hidden, setHidden] = useState(false)
   const [reduced, setReduced] = useState(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [ready, setReady] = useState(false)
-  const dark = DARK_SECTIONS.has(layout.sections[chapter]?.id ?? '')
   const onReady = useCallback(() => setReady(true), [])
   const [revealed, setRevealed] = useState(false)
   const onRevealed = useCallback(() => setRevealed(true), [])
@@ -80,22 +98,21 @@ function App() {
     const id = window.location.hash.slice(1)
     if (id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'instant' }))
   }, [])
-  return <GalleryContext.Provider value={{filter,setFilter,openAll:()=>setAllOpen(true)}}>
+  return <GalleryContext.Provider value={{filter,setFilter}}>
     <a className="skip-link" href="#page-content">Skip to page content</a>
     <div className="canvas-shell" aria-hidden="true"><Canvas flat orthographic dpr={[1, 1.5]} camera={{ zoom: 1, position: [0, -window.innerHeight / 2, 2000], near: .1, far: 4000 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.localClippingEnabled = true; gl.outputColorSpace = THREE.SRGBColorSpace; gl.setClearColor(PAPER) }} events={state => ({ ...events(state), filter: intersections => intersections.filter(hit => {
       const material = (hit.object as THREE.Mesh).material
       const materials = Array.isArray(material) ? material : [material]
       return materials.some(m => !m?.clippingPlanes || m.clippingPlanes.every(plane => plane.distanceToPoint(hit.point) >= 0))
     }) })}><Suspense fallback={null}><Experience layout={layout} scroll={scroll} reduced={reduced} onReady={onReady} /></Suspense></Canvas></div>
-    <header className={`site-nav${hidden ? ' is-hidden' : ''}${chapter > 0 ? ' is-scrolled' : ''}${dark ? ' is-dark' : ''}`} style={{ '--nav-bg': sectionBg(layout.sections[chapter]?.id ?? 'home') } as React.CSSProperties}>
+    <header className={`site-nav${hidden ? ' is-hidden' : ''}${chapter > 0 ? ' is-scrolled' : ''}`}>
       <a className="brand" href="#home" aria-label="Vivid View home"><img src="/images/vivid-logo.png" alt="Vivid View" /></a>
       <nav aria-label="Main navigation"><a className={chapter === 0 ? 'active' : ''} href="#home">Home</a><a className={chapter === 1 ? 'active' : ''} href="#work">Our Work</a><a className={chapter === 3 ? 'active' : ''} href="#people">Who We Are</a><a className={chapter === 2 ? 'active' : ''} href="#services">Our Services</a></nav>
       <a className="talk" href="mailto:contact@thevividview.in">Let’s talk <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" /></svg></a>
     </header>
-    
-    <details className="asset-credit"><summary>3D ARTWORK ?</summary><p><a href="https://sketchfab.com/3d-models/typewriter-f8339a2f7ea849b8afbebb76a40e1759">Typewriter</a> by Francesco Coldesina ? <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Adapted materials, scale, textures and animation. <a href="https://sketchfab.com/3d-models/a668103a96874b80a8421f22fbb5c74f">Lady Bust - Benlliure</a> by Moøkan · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p></details>
+    <Doodles layout={layout} reduced={reduced} />
     <div className="reading-line" aria-hidden="true" />
-    <div className={`chapter${dark ? ' is-dark' : ''}`} aria-hidden="true">0{chapter + 1} / 0{chapters.length} <span>{chapters[chapter]}</span></div>
+    <div className="chapter" aria-hidden="true">0{chapter + 1} / 0{chapters.length} <span>{chapters[chapter]}</span></div>
     <main className="scroll-track" style={{ height: layout.total }}>{layout.sections.map(s => <section className="scene-anchor" id={s.id} key={s.id} aria-label={chapters[s.index]} style={{ top: s.top, height: s.height }} />)}</main>
     <div className="accessible-copy" id="page-content" tabIndex={-1}>
       <h1>One platform. Every creative outcome.</h1><p>We build brands, digital experiences and stories that actually mean something.</p><a href="#work">Explore our work</a>
@@ -107,7 +124,6 @@ function App() {
     </div>
     {ready && !revealed && !reduced && <PageReveal onDone={onRevealed} />}
     {!ready && <div className="loader" role="status"><img src="/images/vivid-logo.png" alt="Vivid View" /><span>LOADING THE EXPERIENCE</span><i /></div>}
-    {allOpen && <WorkOverlay filter={filter} onClose={() => setAllOpen(false)} />}
   </GalleryContext.Provider>
 }
 

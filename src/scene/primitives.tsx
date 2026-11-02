@@ -2,10 +2,10 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode, 
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Text, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { DARK_SECTIONS, INK, LIGHT_INK, PAPER, type SectionLayout } from './layout'
+import { INK, PAPER, type SectionLayout } from './layout'
 import { gsap, smoothScroll } from './motion'
 
-type SceneContext = { layout: SectionLayout; scroll: MutableRefObject<number>; reduced: boolean; clip: THREE.Plane[]; ink: string }
+type SceneContext = { layout: SectionLayout; scroll: MutableRefObject<number>; reduced: boolean; clip: THREE.Plane[] }
 const Context = createContext<SceneContext>(null!)
 export const useSection = () => useContext(Context)
 export const go = (href: string) => { if (href.startsWith('#')) { if(smoothScroll) smoothScroll.scrollTo(href); else document.querySelector(href)?.scrollIntoView({ behavior: 'instant' }) } else window.location.href = href }
@@ -31,28 +31,24 @@ export function Unclipped({ children }: { children: ReactNode }) {
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
 
-export function Section({ layout, scroll, reduced, children }: Omit<SceneContext, 'clip' | 'ink'> & { children: ReactNode }) {
+export function Section({ layout, scroll, reduced, children }: Omit<SceneContext, 'clip'> & { children: ReactNode }) {
   const group = useRef<THREE.Group>(null)
   const clip = useMemo(() => layout.id === 'people' ? [] : [new THREE.Plane(new THREE.Vector3(0, -1, 0), -layout.top), new THREE.Plane(new THREE.Vector3(0, 1, 0), layout.top + layout.height)], [layout.id, layout.top, layout.height])
   useFrame(({ size }) => {
     if (group.current) group.current.visible = scroll.current + size.height > layout.top - 500 && scroll.current < layout.top + layout.height + 500
   })
-  const ink = DARK_SECTIONS.has(layout.id) ? LIGHT_INK : INK
-  return <Context.Provider value={{ layout, scroll, reduced, clip, ink }}><group ref={group} position={[-layout.width * layout.scale / 2, -layout.top, 0]} scale={layout.scale}>
-    {children}
-  </group></Context.Provider>
+  return <Context.Provider value={{ layout, scroll, reduced, clip }}><group ref={group} position={[-layout.width * layout.scale / 2, -layout.top, 0]} scale={layout.scale}>{children}</group></Context.Provider>
 }
 
-export function Label({ x, y, children, size = 18, font = 'sans', color, align = 'left', width, tracking = 0, z = 30, onClick, anchor = 'top', bold = false, lineHeight = 1.14, animated = true }: { x: number; y: number; children: ReactNode; size?: number; font?: 'sans' | 'serif' | 'italic' | 'hero'; color?: string; align?: 'left' | 'center' | 'right'; width?: number; tracking?: number; z?: number; onClick?: () => void; anchor?: 'top' | 'middle'; bold?: boolean; lineHeight?: number; animated?: boolean }) {
-  const { clip, layout, reduced, ink } = useSection()
-  color ??= ink
+export function Label({ x, y, children, size = 18, font = 'sans', color = INK, align = 'left', width, tracking = 0, z = 30, onClick, anchor = 'top', bold = false, lineHeight = 1.14, animated = true }: { x: number; y: number; children: ReactNode; size?: number; font?: 'sans' | 'serif' | 'italic' | 'hero'; color?: string; align?: 'left' | 'center' | 'right'; width?: number; tracking?: number; z?: number; onClick?: () => void; anchor?: 'top' | 'middle'; bold?: boolean; lineHeight?: number; animated?: boolean }) {
+  const { clip, layout, reduced } = useSection()
   const motion=useRef<THREE.Group>(null)
   useEffect(()=>{
     if(!motion.current || reduced || !animated) return
     const tween=gsap.fromTo(motion.current.position,{y:-20},{y:0,duration:.8,ease:'power3.out',scrollTrigger:{start:()=>layout.top+Math.max(0,y)*layout.scale-window.innerHeight*.94,once:true}})
     return ()=>{tween.scrollTrigger?.kill();tween.kill()}
   },[layout.top,layout.scale,y,reduced,animated])
-  return <group ref={motion}><Text position={[x, -y, z]} font={`/fonts/${font === 'sans' ? 'body' : font === 'italic' ? 'display-italic' : 'display'}.ttf`} fontSize={size} anchorX={align} anchorY={anchor} maxWidth={width} textAlign={align} lineHeight={lineHeight} letterSpacing={tracking} onClick={onClick ? e => { e.stopPropagation(); onClick() } : undefined} onPointerOver={onClick ? e => { e.stopPropagation(); document.body.style.cursor = 'pointer' } : undefined} onPointerOut={onClick ? () => document.body.style.cursor = '' : undefined} raycast={onClick ? undefined : noopRaycast}><meshBasicMaterial color={color} clippingPlanes={clip} />{children}</Text></group>
+  return <group ref={motion}><Text position={[x, -y, z]} font={`/fonts/${font === 'sans' ? bold ? 'inter-bold' : 'inter' : font === 'hero' ? 'hero-serif' : font === 'italic' ? 'newsreader-italic' : 'newsreader'}.ttf`} fontSize={size} anchorX={align} anchorY={anchor} maxWidth={width} textAlign={align} lineHeight={lineHeight} letterSpacing={tracking} onClick={onClick ? e => { e.stopPropagation(); onClick() } : undefined} onPointerOver={onClick ? e => { e.stopPropagation(); document.body.style.cursor = 'pointer' } : undefined} onPointerOut={onClick ? () => document.body.style.cursor = '' : undefined} raycast={onClick ? undefined : noopRaycast}><meshBasicMaterial color={color} clippingPlanes={clip} />{children}</Text></group>
 }
 
 function roundedShape(w: number, h: number, r: number) {
@@ -69,14 +65,13 @@ export function Panel({ x, y, w, h, color = PAPER, radius = 0, z = 0, border = f
   const geometry = useMemo(() => new THREE.ShapeGeometry(roundedShape(w, h, Math.min(radius, w / 2, h / 2)), 12), [w, h, radius])
   const outline = useMemo(() => new THREE.BufferGeometry().setFromPoints(roundedShape(w, h, Math.min(radius, w / 2, h / 2)).getPoints(12).map(p => new THREE.Vector3(p.x, p.y, 0))), [w, h, radius])
   useEffect(() => () => { geometry.dispose(); outline.dispose() }, [geometry, outline])
-  const line = useMemo(() => new THREE.LineLoop(outline, new THREE.LineBasicMaterial({ color: '#002408', transparent: true, opacity: .65, clippingPlanes: clip })), [outline, clip])
+  const line = useMemo(() => new THREE.LineLoop(outline, new THREE.LineBasicMaterial({ color: '#8a8983', transparent: true, opacity: .65, clippingPlanes: clip })), [outline, clip])
   useEffect(() => () => (line.material as THREE.Material).dispose(), [line])
   return <group position={[x, -y, z]}><mesh geometry={geometry} raycast={noopRaycast}><meshBasicMaterial color={color} clippingPlanes={clip} transparent={opacity < 1} opacity={opacity} /></mesh>{border && <primitive object={line} position={[0, 0, .1]} raycast={noopRaycast} />}</group>
 }
 
-export function Stroke({ points, color: colorProp, z = 1, draw = false, opacity = 1, width = 1 }: { points: number[][]; color?: string; z?: number; draw?: boolean; opacity?: number; width?: number }) {
-  const { clip, scroll, layout, reduced, ink } = useSection()
-  const color = colorProp ?? ink
+export function Stroke({ points, color = '#c4c1b9', z = 1, draw = false, opacity = 1, width = 1 }: { points: number[][]; color?: string; z?: number; draw?: boolean; opacity?: number; width?: number }) {
+  const { clip, scroll, layout, reduced } = useSection()
   const line = useMemo(() => {
     if (width <= 1) return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points.map(([x, y]) => new THREE.Vector3(x, -y, 0))), new THREE.LineBasicMaterial({ color, transparent: true, opacity, clippingPlanes: clip }))
     const positions: number[] = []
@@ -107,16 +102,17 @@ export function Arrow({ x, y, r = 26, direction = 'right', color = INK, onClick,
   return <group>{circle && <Stroke points={ring} color={color} z={z} />}<group ref={group}><Stroke points={arrow} color={color} z={z} width={weight} /></group>{onClick && <mesh position={[x, -y, z + 1]} onPointerOver={e => { e.stopPropagation(); hover.current = true; document.body.style.cursor = 'pointer' }} onPointerOut={() => { hover.current = false; document.body.style.cursor = '' }} onClick={e => { e.stopPropagation(); onClick() }}><circleGeometry args={[r + 5, 24]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} clippingPlanes={clip} /></mesh>}</group>
 }
 
-const photoVertex = `varying vec2 vUv;uniform float uHover;
+const photoVertex = `varying vec2 vUv;
 #include <clipping_planes_pars_vertex>
-void main(){vUv=uv;vec3 p=position; vec4 mvPosition=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mvPosition;
+void main(){vUv=uv; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;
 #include <clipping_planes_vertex>
 }`
 const photoFragment = `uniform sampler2D uMap; uniform vec2 uRepeat; uniform vec2 uOffset; uniform vec2 uPointer; uniform float uHover; uniform float uTime; uniform float uBend; varying vec2 vUv;
 #include <clipping_planes_pars_fragment>
 void main(){
 #include <clipping_planes_fragment>
-vec2 uv=vUv; uv.y+=sin(uv.x*3.14159265)*uBend*.025;
+vec2 uv=vUv; float d=distance(uv,uPointer); uv+=(uv-uPointer)*sin(d*18.-uTime*2.)*exp(-d*7.)*uHover*.012;
+uv=(uv-.5)*(1.-uHover*.015)+.5; uv.y+=sin(uv.x*3.14159265)*uBend*.006;
 vec4 c=texture2D(uMap,clamp(uv,0.,1.)*uRepeat+uOffset); gl_FragColor=vec4(c.rgb,1.);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
@@ -153,9 +149,9 @@ export function Photo({ src, x = 0, y = 0, w, h, angle = 0, z = 5, framed = fals
   })
   const enter = (e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); hover.current = 1; document.body.style.cursor = href ? 'pointer' : 'default' }
   return <group ref={group} position={[x, -y, z]} rotation={[0, 0, -angle * Math.PI / 180]}>
-    {framed && <><Panel x={3} y={5} w={w + 34} h={h + 50} color="#002408" z={-2} opacity={.55} /><Panel x={0} y={3} w={w + 32} h={h + 48} color="#FFDE59" z={-1} border /></>}
+    {framed && <><Panel x={3} y={5} w={w + 34} h={h + 50} color="#d3d0c8" z={-2} opacity={.55} /><Panel x={0} y={3} w={w + 32} h={h + 48} color="#fbfaf7" z={-1} border /></>}
     <mesh onPointerOver={interactive ? enter : undefined} onPointerOut={interactive ? () => { hover.current = 0; document.body.style.cursor = '' } : undefined} onPointerMove={interactive ? e => { e.stopPropagation(); if(e.uv) pointer.current.copy(e.uv) } : undefined} onClick={href ? e => { e.stopPropagation(); go(href) } : undefined} raycast={interactive ? undefined : noopRaycast}>
-      <planeGeometry args={[w, h, 16, 12]} /><shaderMaterial ref={material} uniforms={uniforms} vertexShader={photoVertex} fragmentShader={photoFragment} clippingPlanes={clip} clipping side={THREE.DoubleSide} />
+      <planeGeometry args={[w, h]} /><shaderMaterial ref={material} uniforms={uniforms} vertexShader={photoVertex} fragmentShader={photoFragment} clippingPlanes={clip} clipping side={THREE.DoubleSide} />
     </mesh>
   </group>
 }
@@ -182,5 +178,5 @@ function SVGPath({ d, scale, offset }: { d: string; scale: number; offset: numbe
     path.setAttribute('d', d); const length = path.getTotalLength()
     return Array.from({ length: 181 }, (_, i) => { const p = path.getPointAtLength(length * i / 180); return [p.x * scale + offset, p.y * scale] })
   }, [d, scale, offset])
-  return <Stroke points={points} color="#002408" opacity={.62} draw />
+  return <Stroke points={points} color="#b7b5ad" opacity={.62} draw />
 }

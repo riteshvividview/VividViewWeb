@@ -16,7 +16,7 @@ float curtain(float p){
 }
 void main(){
   float aa = 1.5 / uRes.y;
-  vec3 paper = vec3(.965, .961, .945), ink = vec3(0., .141, .031), red = vec3(.722, .161, .239);
+  vec3 paper = vec3(.961, .957, .941), ink = vec3(.145, .149, .133), red = vec3(.722, .161, .247);
   float paperCover = smoothstep(-aa, aa, curtain(uPaper));
   float inkEdge = curtain(uInk), inkCover = smoothstep(-aa, aa, inkEdge);
   float line = smoothstep(-aa, aa, inkEdge) - smoothstep(.004 - aa, .004 + aa, inkEdge);
